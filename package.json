@@ -1,0 +1,28 @@
+{
+  "name": "cluster-callback-routing",
+  "version": "1.0.0",
+  "description": "Simple callback routing between processes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests available yet!\" && exit 1"
+  },
+  "keywords": [
+    "cluster",
+    "callback",
+    "ipc",
+    "routing"
+  ],
+  "author": {
+    "name": "Mikal Stordal",
+    "email": "mikalstordal@gmail.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "array-flatten": "^2.1.0",
+    "array-includes": "^3.0.2",
+    "async": "^2.1.2",
+    "debug": "^2.2.0",
+    "node-uuid": "^1.4.7",
+    "path-to-regexp": "^1.7.0"
+  }
+}

@@ -1,0 +1,8 @@
+# Node packages
+node_modules
+
+# Ignore editor tags store
+.tags
+
+# Ignore .DS_Store files on OS X
+.DS_Store
