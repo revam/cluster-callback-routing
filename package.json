@@ -1,6 +1,6 @@
 {
   "name": "cluster-callback-routing",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Simple callback routing between processes",
   "main": "index.js",
   "scripts": {
