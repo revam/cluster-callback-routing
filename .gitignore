@@ -1,5 +1,6 @@
 # Node packages
 node_modules
+npm_debug.log
 
 # Ignore editor tags store
 .tags
