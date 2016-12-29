@@ -1,26 +1,82 @@
 # Cluster Callback Routing
-Basic IPC load routing with callbacks.
+[![npm version](https://img.shields.io/npm/v/cluster-callback-routing.svg?style=flat)](https://www.npmjs.com/package/cluster-callback-routing)
 
-## About
-This project was created as an experiment to test how I could utilize Clusters in Node, now shared in case others may find it useful.
+Basic routing through IPC with callback handling.
 
-It's basically a (wrapped and) modified [Express](https://github.com/expressjs/express) router acting as the central hub in a star network.
-Every normal worker acts like a node requesting information from the central, which in turn requests information from the privileged workers for them to respond with the desired information.
+Shared in case others may find it useful.
 
-If you want to find out all the what-s and how-s, take a look at the source code.
+## Table of Contents
 
-## Example usage
-Let's explain how to use it with some examples.
+<!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-### The (recommended) minimum
+- [Table of Contents](#table-of-contents)
+- [Installation](#installation)
+- [Features](#features)
+- [Introduction](#introduction)
+	- [Configuration](#configuration)
+	- [The bare minimum](#the-bare-minimum)
+	- [Recommended project structure](#recommended-project-structure)
+- [Routes](#routes)
+	- [Names](#names)
+	- [Object](#object)
+	- [Folder](#folder)
+- [API](#api)
+- [Tests](#tests)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
+- [License](#license)
 
-The recommended way to `CCR` is to create a folder with all your routes. (Default folder name is `routes` and is changeable.) It is also _recommended_ to include `route.js` and `worker.js` in the folder. `route.js` is the default *Route* and `worker.js`
- is the (multiple) worker script. (Example below.)
+<!-- /TOC -->
 
-#### Example project structure
+## Installation
+```sh
+npm install --save cluster-callback-routing
 ```
-project-root
-+-- app.js
+
+## Features
+-   callback driven communication between workers and routes.
+-   basic error handling (through IPC)
+-   easy management of routes
+
+## Introduction
+It's basically hub in a [star network](https://en.wikipedia.org/wiki/Star_network), with many routes behind each own (modified) [Express Router](https://github.com/expressjs/express/tree/master/lib/router).
+
+Every __worker__ acts like a node requesting information from the hub, which in turn requests information from __the defined routes__ for (one of) them to respond with the desired information.
+
+__Note__: Remember to always start the work after configuring through __#start()__.
+
+### Configuration
+Run __#init()__ to set any options in a chain, or __#options()__ to get the complete `options` when additional options is sat.
+
+```js
+const connection = require('cluster-callback-routing')
+
+.init({
+  'env': <String>, // Runtime environment. Defaults to `process.env.NODE_ENV` if set or 'development'.
+  'module root': <String>, // Module root. Defaults to project root (cwd).
+  'count': <Number>, // Amount of workers to spawn. Defaults to amount of CPU-cores on system.
+  'respawn': <Boolean>, // Determine if child-processes throws or restarts on error. Defaults to true.
+  'routes': <Object or String>, // See #routes for details.
+  'case sensitive routing': <Boolean>, // Whether or not to respect case sensitivity while routing. Does not apply to route names.
+
+  // Any other fields are ignored and can be used as desired.
+  'foo': 'bar',
+  ...
+})
+
+let all_options = conneciton.options({ ... })
+...
+```
+
+### The bare minimum
+```js
+require('cluster-callback-routing').init({ ... }).start()
+```
+
+### Recommended project structure
+```
+project
++-- index.js
 `-- routes
   +-- route.js
   +-- route1.js
@@ -28,145 +84,67 @@ project-root
   `-- worker.js
 ```
 
-#### app.js
+## Routes
+A Route is basically a Router you define routes for.
 
-The smallest loader. (no-config with defaults)
+With the exception of `worker` do all routes only spawn one at a time.
 
-```
-// Load the library
-require('cluster-callback-routing').start()
-```
+There are two ways of setting routes; (1) as an object or (2) as a path (relative to project-root) to a folder.
 
-### Full one-file configuration
+### Names
+A route name can be any name you want, except for `route` or `worker`, which is reserved as special routes. (Explained below)
 
-```
+`route`: The default route handler for all requests, but only if present. It is still possible to use CCR without a default handler.
 
-// All initialization methods are chainable.
+`worker`: The worker route. It has no routing capabilities, and can be spawned more than one a t a time.
 
-// Load the library
-require('cluster-callback-routing')
+### Object
+There are three ways to initialize routes as an object; (1) As a path, (2) directly, or (3) as an object containing the field `route`.
 
-// Load initial options
+```js
+...
 .init({
-  // Determine if worker restarts or throws on error. Defaults to true.
-  respawn: false,
-
-  // Amount of workers to spawn. Defaults to amount of CPU-cores on system.
-  count: 1,
-
-  // Routes { Object } form
+  ...
   routes: {
-    // Main connection (route)
-    route: connection => {
-      connection.add('path/callback', (req, next) => {
-        console.log('%s : [ %s ]', req.path, req.load)
-
-        // It is not necessary, but recommended, to reserve the first argument for errors.
-        req.send(null, 'that')
-      })
-
-      // Example use with parameters in path
-      connection.add('path/numbers/:num', (req, next) => {
-        console.log('%s : [ %s ], [ %s ]', req.path, req.load, Object.keys(req.params))
-
-        // As stated above, it is not necessary to reserve the first argument.
-        req.send(req.params.num)
-      })
+    route: 'path/to/route', // It is possible to specify a path as a route.
+    worker: connection => { // Or directly setting the route here.
+      ...
     },
-
-    // Worker(-s) connection (worker)
-    worker: connection => {
-      // Normal path to callback
-      // load [ 'this' ]
-      connection.request('path/callback', 'this', (err, that) => {
-        console.log('%s, %s', err, that)
-      })
-
-      // In case sesitive mode, this path will produse an error
-      // load [ ]
-      connection.request('PATH/callback', (err, that) => {
-        console.log('%s, %s', err, that)
-      })
-
-      // Example use with params in path
-      // load [ ]
-      connection.request('path/numbers/14', (number) => {
-        console.log('Number: %s', number)
-      })
-
-      // By specifying the name of an unique worker can we send requests to them.
-      // load [ 'pin' ]
-      connection.request('priv1/path', 'pin', (err, pon, pan) => {
-        if (err) {
-          console.log(err)
-          return
-        }
-
-        console.log('%s, %s', pon, pan)
-      })
-    },
-    // `route` and `route` is reserved, and cannot be used as a privileged route.
-    // Example privileged worker, with routing.
-    priv1: {
-      // All options in this object will be set in the root of the connection.
-      'string value': 0 / 1,
-
-      // Connection route
-      route: connection => {
-        // Se below for declaration
-        console.log(connection.get('unique variable'))
-        connection.add('path', (req, next) => {
-          console.log('%s : [ %s ]', req.path, req.load)
-          req.send(null, 'pon', 'pan')
-        })
+    route1: { // If you need variables for only one route,
+      var1: 'only accessible for route1', // you can set them enclosed in an object,
+      route: connection => { // where 'route' is the handler for the route.
+      	...
       }
-    },
-
-    // Can also be directly set as the function or as a path.
-    priv2: connection => {
-      console.log(connection.channel)
-    },
-
-    // Path must be absolute or relative to project root.
-    priv3: 'path/to/file'
+    }
   },
-
-  // Defaults to process.env.NODE_ENV or 'development'. (No need to set)
-  env: 'test',
-
-  // Sets the module root, defaults to project root. (No need to set)
-  'module root': __dirname,
-
-  // Whether or not strict. Defaults to false.
-  'strict routing': false,
-
-  // Defaults to true.
-  'case sensitive routing': true
+  ...
 })
-
-// It is possible to set one and one option with the #set() method
-.set('one', 1)
-
-// It is also possible to set parts of an object, or create a new object chain
-.set('new object.new property', 'new value')
-
-// Starts the route and connections
-.start()
-
+...
 ```
 
-## TO-DOs
-- Add option to pipe `stdout` of each child-process to it's own file in a customizable
-  folder relative to project root.
-  (Maybe a good idea to seperate the `stdout` of each process, as sometimes multiple
-  writes to same `stdout` is conflicting to read both for man and machine.)
-- Make some tests (How do we test this mess... I mean it's using multiple processes
-  and only one instance per process... Anyone?..)
-- Document the API (How?!)
-- Better examples?
+### Folder
+You put the routes in a folder, where the file- or folder names is used as the route name. And set the path in the `routes` field.
+
+```js
+...
+.init({
+  ...
+  routes: 'path/to/routes', // You can choose any path you want, but it must lead to a folder.
+  ...
+})
+...
+```
+## API
+See the [API Reference](https://github.com/revam/cluster-callback-routing/wiki/API-Reference)  on the [Wiki](https://github.com/revam/cluster-callback-routing/wiki) for details on the API.
+
+## Tests
+Until some real tests are implemented, the file `test.js` will have a small test for humans to run.
 
 ## Contributing
+If someone is interested in contributing, feel free to create a [PR](https://github.com/revam/cluster-callback-routing/pulls) or [Issue](https://github.com/revam/cluster-callback-routing/issues) on [GitHub](https://github.com/revam/cluster-callback-routing).
 
+## Changelog
+[Changelog here](./CHANGES.md)
 
 ## License
-This project is licensed under the MIT license, an example of the license can be found within the LICENSE.md file.
+[MIT](./LICENSE)
