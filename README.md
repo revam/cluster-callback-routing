@@ -138,7 +138,7 @@ You put the routes in a folder, where the file- or folder names is used as the r
 See the [API Reference](https://github.com/revam/cluster-callback-routing/wiki/API-Reference)  on the [Wiki](https://github.com/revam/cluster-callback-routing/wiki) for details on the API.
 
 ## Tests
-Until some real tests are implemented, the file `test.js` will have a small test for humans to run.
+Until some real tests are added will the file `test.js` have a small test for humans to run.
 
 ## Contributing
 If someone is interested in contributing, feel free to create a [PR](https://github.com/revam/cluster-callback-routing/pulls) or [Issue](https://github.com/revam/cluster-callback-routing/issues) on [GitHub](https://github.com/revam/cluster-callback-routing).
