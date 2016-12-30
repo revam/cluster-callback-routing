@@ -3,6 +3,7 @@
 
 /**
  * Module dependencies.
+ *
  * @private
  */
 const path = require('path')
