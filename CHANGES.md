@@ -1,6 +1,10 @@
 # Changelog
 For a full list of changes, take a closer look at the commits.
 
+## 1.2.2
+-   Made new Router instances respect global options.
+-   Updated README.md
+
 ## 1.2.1
 -   Fixed fn.length check in Layer
 -   Added missing information in comments
