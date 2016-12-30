@@ -20,6 +20,7 @@ Shared in case others may find it useful.
 	- [Names](#names)
 	- [Object](#object)
 	- [Folder](#folder)
+- [Routers](#routers)
 - [API](#api)
 - [Tests](#tests)
 - [Contributing](#contributing)
