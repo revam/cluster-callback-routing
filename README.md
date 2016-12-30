@@ -34,14 +34,13 @@ npm install --save cluster-callback-routing
 ```
 
 ## Features
--   callback driven communication between workers and routes.
+-   callback driven communication between workers and routes
 -   basic error handling (through IPC)
 -   easy management of routes
+-   routers
 
 ## Introduction
-It's basically hub in a [star network](https://en.wikipedia.org/wiki/Star_network), with many routes behind each own (modified) [Express Router](https://github.com/expressjs/express/tree/master/lib/router).
-
-Every __worker__ acts like a node requesting information from the hub, which in turn requests information from __the defined routes__ for (one of) them to respond with the desired information.
+It's basically like a hub in a [star network](https://en.wikipedia.org/wiki/Star_network), with routes and workers as nodes. Every __worker__ acts like a node requesting information from the hub, which in turn requests information from __the defined routes__ for (one of) them to respond with the desired information.
 
 __Note__: Remember to always start the work after configuring through __#start()__.
 
@@ -134,6 +133,23 @@ You put the routes in a folder, where the file- or folder names is used as the r
 })
 ...
 ```
+
+## Routers
+The Router class is based on the [Express Router](https://github.com/expressjs/express/tree/master/lib/router).
+
+An instance can be acquired on routes (not workers) through the __#Router()__ method, as shown below.
+```js
+const connection = require('cluster-callback-routing').start()
+
+if (connection.key !== 'worker') {
+  let router = connection.Router({
+    caseSensitive: <Boolean> // Same as global 'case sensitive routing' or sat here.
+  })
+}
+
+...
+```
+
 ## API
 See the [API Reference](https://github.com/revam/cluster-callback-routing/wiki/API-Reference)  on the [Wiki](https://github.com/revam/cluster-callback-routing/wiki) for details on the API.
 
@@ -148,3 +164,6 @@ If someone is interested in contributing, feel free to create a [PR](https://git
 
 ## License
 [MIT](./LICENSE)
+
+## See also
+-   [Express](https://github.com/expressjs/express)
