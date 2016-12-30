@@ -1,4 +1,14 @@
 # Changelog
+For a full list of changes, take a closer look at the commits.
+
+## 1.2.1
+-   Fixed fn.length check in Layer
+-   Added missing information in comments
+-   Moved #extendPath() to base class
+-   Removed strict option as it is deemed unnecessary
+-   Added a basic test script
+-   Added CHANGES.md
+-   Revised README.md
 
 ## 1.2.0
 -   Added support for folders as routes (via. index.js)
