@@ -146,8 +146,8 @@ if (connection.key !== 'worker') {
   let router = connection.Router({
     caseSensitive: <Boolean> // Same as global 'case sensitive routing' or sat here.
   })
+  ...
 }
-
 ...
 ```
 
