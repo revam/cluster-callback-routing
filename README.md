@@ -127,7 +127,7 @@ There are three ways to initialize routes in an object; (1) As a path, (2) direc
 ```
 
 ### Initialize as a path
-It is possible to specify the path to a folder. When doing so will __javascript files__ and __folders__ directly after the specified path be used as routes. Route name according to filename or folder name.
+It is possible to specify the path to a folder with scripts. __Javascript files__ and __folders__ directly after the specified path will then be used as routes. Route name according to filename or folder name.
 
 ```js
 ...
