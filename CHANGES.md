@@ -1,6 +1,12 @@
 # Changelog
 For a full list of changes, take a closer look at the commits.
 
+## 2.0.0
+-   Code tweaks
+-   Renamed #use() -> #route() & #Router() -> #router()
+-   Removed Route class and associated functionality (#add() & #route())
+-   Updated README.md
+
 ## 1.2.2
 -   Made new Router instances respect global options.
 -   Updated README.md

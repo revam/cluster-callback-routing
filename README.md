@@ -1,7 +1,7 @@
 # Cluster Callback Routing
-[![npm version](https://img.shields.io/npm/v/cluster-callback-routing.svg?style=flat)](https://www.npmjs.com/package/cluster-callback-routing)
+[![npm version](https://img.shields.io/npm/v/cluster-callback-routing.svg?style=flat)](https://www.npmjs.com/package/cluster-callback-routing) [![github tag](https://img.shields.io/github/tag/revam/cluster-callback-routing.svg?style=flat)](https://www.github.com/revam/cluster-callback-routing)
 
-Basic routing through IPC with callback handling.
+Basic inter-process routing with callback handling.
 
 Shared in case others may find it useful.
 
@@ -16,16 +16,19 @@ Shared in case others may find it useful.
 	- [Configuration](#configuration)
 	- [The bare minimum](#the-bare-minimum)
 	- [Recommended project structure](#recommended-project-structure)
-- [Routes](#routes)
-	- [Names](#names)
-	- [Object](#object)
-	- [Folder](#folder)
-- [Routers](#routers)
-- [API](#api)
+- [Connections](#connections)
+	- [Special connection routes](#special-connection-routes)
+	- [Initialize as an object](#initialize-as-an-object)
+	- [Initialize as a path](#initialize-as-a-path)
+- [Routing](#routing)
+	- [`route()`](#route)
+	- [`request()`](#request)
+	- [`router()`](#router)
 - [Tests](#tests)
 - [Contributing](#contributing)
 - [Changelog](#changelog)
 - [License](#license)
+- [See also](#see-also)
 
 <!-- /TOC -->
 
@@ -35,18 +38,18 @@ npm install --save cluster-callback-routing
 ```
 
 ## Features
--   callback driven communication between workers and routes
+-   callback driven communication between connections
 -   basic error handling (through IPC)
 -   easy management of routes
 -   routers
 
 ## Introduction
-It's basically like a hub in a [star network](https://en.wikipedia.org/wiki/Star_network), with routes and workers as nodes. Every __worker__ acts like a node requesting information from the hub, which in turn requests information from __the defined routes__ for (one of) them to respond with the desired information.
-
-__Note__: Remember to always start the work after configuring through __#start()__.
+(Needs a proper introduction)
 
 ### Configuration
-Run __#init()__ to set any options in a chain, or __#options()__ to get the complete `options` when additional options is sat.
+Run `init()` to set any options in a chain, or `options()` to get the options object when additional options is sat. Any configuration must be done before `start()` is invoked.
+
+__Note__: Remember to always start the work through `start()`.
 
 ```js
 const connection = require('cluster-callback-routing')
@@ -56,10 +59,10 @@ const connection = require('cluster-callback-routing')
   'module root': <String>, // Module root. Defaults to project root (cwd).
   'count': <Number>, // Amount of workers to spawn. Defaults to amount of CPU-cores on system.
   'respawn': <Boolean>, // Determine if child-processes throws or restarts on error. Defaults to true.
-  'routes': <Object or String>, // See #routes for details.
-  'case sensitive routing': <Boolean>, // Whether or not to respect case sensitivity while routing. Does not apply to route names.
+  'routes': <Object or String>, // See #connections for details.
+  'case sensitive routing': <Boolean>, // Whether or not to respect case sensitivity while routing. Does not apply to route names. Defaults to true.
 
-  // Any other fields are ignored and can be used as desired.
+  // Any other fields are ignored and can be used freely.
   'foo': 'bar',
   ...
 })
@@ -69,8 +72,10 @@ let all_options = conneciton.options({ ... })
 ```
 
 ### The bare minimum
+If you're okay with defaults, then you can just invoke `start()`.
+
 ```js
-require('cluster-callback-routing').init({ ... }).start()
+require('cluster-callback-routing').start()
 ```
 
 ### Recommended project structure
@@ -84,33 +89,32 @@ project
   `-- worker.js
 ```
 
-## Routes
-A Route is basically a Router you define routes for.
+## Connections
+A connection route is a child-process communicator used to manage routes or send requests. A connection must have an unique name and will only spawn one at a time. The exception to this is the special connection `worker`, as explained below.
+You can choose to use any valid string as a name, except names associated with special connection routes.
 
-With the exception of `worker` do all routes only spawn one at a time.
+You can either declare your routes (1) in an object or (2) as a path. _It is recommended to use the latter._
 
-There are two ways of setting routes; (1) as an object or (2) as a path (relative to project-root) to a folder.
+### Special connection routes
+Both special routes are optional to use.
 
-### Names
-A route name can be any name you want, except for `route` or `worker`, which is reserved as special routes. (Explained below)
+`route`: The default (request) routes handler for all requests, if present. If no default handler is set, then any requests not specifying a (connection) receiver will rebounce.
 
-`route`: The default route handler for all requests, but only if present. It is still possible to use CCR without a default handler.
+`worker`: As opposed to a normal route has no routing capabilities, but in return can spawn more than one at a time.
 
-`worker`: The worker route. It has no routing capabilities, and can be spawned more than one a t a time.
-
-### Object
-There are three ways to initialize routes as an object; (1) As a path, (2) directly, or (3) as an object containing the field `route`.
+### Initialize as an object
+There are three ways to initialize routes in an object; (1) As a path, (2) directly, or (3) within an object with the field `route`.
 
 ```js
 ...
 .init({
   ...
   routes: {
-    route: 'path/to/route', // It is possible to specify a path as a route.
-    worker: connection => { // Or directly setting the route here.
+    route: 'path/to/route', // It is possible to specify a path to require,
+    worker: connection => { // directly setting the route here,
       ...
     },
-    route1: { // If you need variables for only one route,
+    route1: { // Or if you need variables initialized for a single route,
       var1: 'only accessible for route1', // you can set them enclosed in an object,
       route: connection => { // where 'route' is the handler for the route.
       	...
@@ -122,8 +126,8 @@ There are three ways to initialize routes as an object; (1) As a path, (2) direc
 ...
 ```
 
-### Folder
-You put the routes in a folder, where the file- or folder names is used as the route name. And set the path in the `routes` field.
+### Initialize as a path
+It is possible to specify the path to a folder with scripts. __Javascript files__ and __folders__ directly after the specified path will then be used as routes. Route name according to filename or folder name.
 
 ```js
 ...
@@ -132,18 +136,95 @@ You put the routes in a folder, where the file- or folder names is used as the r
   routes: 'path/to/routes', // You can choose any path you want, but it must lead to a folder.
   ...
 })
+
+...
+
+.init({
+	...
+	routes: './path/to/routes', // This is equal to the above statement.
+  ...
+})
+
+...
+
+.init({
+	...
+	routes: '/absolute/path/to/routes', // It is also possible to use an absolute path.
+  ...
+})
 ...
 ```
 
-## Routers
-The Router class is based on the [Express Router](https://github.com/expressjs/express/tree/master/lib/router).
+## Routing
+Below are some brief explanations about the basic routing methods.
 
-An instance can be acquired on routes (not workers) through the __#Router()__ method, as shown below.
+See the [API Reference](https://github.com/revam/cluster-callback-routing/wiki/API-Reference) on the [Wiki](https://github.com/revam/cluster-callback-routing/wiki) for more in-depth details of the API.
+
+### `route()`
+A route is a path with one or more callbacks tied to it. Requests will try to match against each route you define.
+
+For more details, see the [wiki page](#). (page needed)
+
 ```js
-const connection = require('cluster-callback-routing').start()
+...
+// Defining a route
+connection.route('path/to/callback', (req, next) => {
+	...
+})
+...
+```
+
+### `request()`
+When we want to do some work on another connection, we make a request. It is possible to attach a _JSON-friendly_ load with the request.
+
+It is _recommended_, but not needed, to reserve the first argument in all callbacks for error handling.
+
+For more details, see the [wiki page](#). (page needed)
+
+```js
+...
+// We can send plain requests without any load,
+connection.request('path/to/callback/without/load', (err, result) => {
+	...
+})
+...
+// wrap it in an array,
+connection.request('path/to/callback/with/load', ['any', 'var', 0], (err, result) => {
+	...
+})
+...
+// or add it directly.
+connection.request('path/to/callback', 'any', 'var', 0, (err, result) => {
+  ...
+})
+...
+```
+
+To choose a different connection then the default, use the connection name as the first part of the path.
+
+```js
+...
+connection.request('/route1/path/to/callback', (err, result) => {
+	...
+})
+...
+```
+
+### `router()`
+An extension of the routing interface. Has a variety of uses.
+An instance can be acquired on any connection capable of routing.
+
+Router is based on [Express Router](https://github.com/expressjs/express/tree/master/lib/router).
+
+For more details, see the [wiki page](#). (page needed)
+
+```js
+...
+
+console.log('Can %s spawn new router: ', connection.key, typeof connection.Router === 'function')
 
 if (connection.key !== 'worker') {
-  let router = connection.Router({
+  let router = connection.router({
     caseSensitive: <Boolean> // Same as global 'case sensitive routing' or sat here.
   })
   ...
@@ -151,8 +232,18 @@ if (connection.key !== 'worker') {
 ...
 ```
 
-## API
-See the [API Reference](https://github.com/revam/cluster-callback-routing/wiki/API-Reference)  on the [Wiki](https://github.com/revam/cluster-callback-routing/wiki) for details on the API.
+Using a router is as simple as binding it to a route path.
+```js
+...
+// Get an instance
+let router = connection.router({ ... })
+
+...
+
+// Bind it to a path.
+connection.route('/some-router', router)
+...
+```
 
 ## Tests
 Until some real tests are added will the file `test.js` have a small test for humans to run.
@@ -167,4 +258,4 @@ If someone is interested in contributing, feel free to create a [PR](https://git
 [MIT](./LICENSE)
 
 ## See also
--   [Express](https://github.com/expressjs/express)
+-   [Express](https://github.com/expressjs/express) - used their routing logic as a starting point.
