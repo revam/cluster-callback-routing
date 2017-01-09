@@ -1,7 +1,7 @@
 // All initialization methods are chainable.
 
 // Load the library
-const connection = require('cluster-callback-routing')
+const connection = require('.')
 
 // Load initial options
 connection.init({
@@ -34,7 +34,7 @@ connection.init({
       console.log('route:', connection.get('var1', 'No variable here.'))
       console.log('route:', connection.get('var2', 'Still no.'))
 
-      connection.add('path/callback', (req, next) => {
+      connection.route('path/callback', (req, next) => {
         console.log('%s : [ %s ]', req.path, req.load)
 
         // It is not necessary, but recommended, to reserve the first argument for errors.
@@ -42,7 +42,7 @@ connection.init({
       })
 
       // Example use with parameters in path
-      connection.add('numbers/:num', (req, next) => {
+      connection.route('numbers/:num', (req, next) => {
         console.log('%s : [ %s ], [ %s ]', req.path, req.load, Object.keys(req.params))
 
         // As stated above, it is not necessary to reserve the first argument.
@@ -66,9 +66,9 @@ connection.init({
       // load [ 'this' ]
       connection.request('path/callback', 'this', (err, that) => {
         if (err) {
-          console.log(err)
+          console.log('got', err)
         } else {
-          console.log(that)
+          console.log('got', that)
         }
 
         console.log(connection.extendPath('../asdasd', './dsff/dfgfdg', '.././a'))
@@ -80,9 +80,9 @@ connection.init({
       // load [ ]
       connection.request('PATH/callback', (err, that) => {
         if (err) {
-          console.log(err)
+          console.log('produced an error as expected')
         } else {
-          console.log(that)
+          console.log('produc- wait, what?')
         }
 
         checkCounter(++counter)
@@ -118,7 +118,7 @@ connection.init({
         console.log('priv1:', connection.get('var1', 'No variable here.'))
         console.log('priv1:', connection.get('var2', 'Still no.'))
 
-        connection.add('path', (req, next) => {
+        connection.route('path', (req, next) => {
           console.log('%s : [ %s ]', req.path, req.load)
           req.send(null, 'pon', 'pan')
         })
